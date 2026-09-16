@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Billy Christopher Smith">
+
+<title>An introduction to linear mixed effects models in chronobiology: Part 1</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="part1_files/libs/clipboard/clipboard.min.js"></script>
+<script src="part1_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="part1_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="part1_files/libs/quarto-html/popper.min.js"></script>
+<script src="part1_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="part1_files/libs/quarto-html/anchor.min.js"></script>
+<link href="part1_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="part1_files/libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="part1_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="part1_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="part1_files/libs/bootstrap/bootstrap-138a6193a3bd40baf1e627da441a4734.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">An introduction to linear mixed effects models in chronobiology: Part 1</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Billy Christopher Smith </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="what-is-this-document" class="level2">
+<h2 class="anchored" data-anchor-id="what-is-this-document">What is this document?</h2>
+<p>This is a ‘Quarto’ document. Quarto enables you to put content and executable R code together into a single document. Quarto .html files are rendered from .qmd files, which are similar to Jupyter Notebooks. If you open a .qmd in RStudio, you can make changes to the code, and press ‘Render’ to update outputs and convert this into a .html (web page) document. To learn more about Quarto, see <a href="https://quarto.org" class="uri">https://quarto.org</a>.</p>
+</section>
+<section id="hello-world" class="level2">
+<h2 class="anchored" data-anchor-id="hello-world">Hello, world!</h2>
+<p>Below is some simple R code. We store some text in a variable ‘my_string’, and output this with a friendly greeting.</p>
+<p>When we run this, quarto pastes the output below the code. You would see the same output if you ran this code directly in RStudio.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>my_string <span class="ot">&lt;-</span> <span class="st">"Autumn Clock Club 2026"</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste0</span>(<span class="st">"Hello, "</span>, my_string, <span class="st">"!"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Hello, Autumn Clock Club 2026!"</code></pre>
+</div>
+</div>
+</section>
+<section id="load-in-packages-and-setup" class="level2">
+<h2 class="anchored" data-anchor-id="load-in-packages-and-setup">Load in Packages, and Setup</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># you may need to run: install.packages(c("dplyr","ggplot2","lme4","bayestestR","MuMIn"))</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr) <span class="co"># many functions for handling data</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2) <span class="co"># for plotting</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lme4) <span class="co"># linear mixed effects models (LMER)</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(bayestestR) <span class="co"># for generating simpson's data</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(MuMIn) <span class="co"># for r.squaredGLMM</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>okabe_ito <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">"orange"</span> <span class="ot">=</span>    <span class="st">"#E69F00"</span>,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"sky_blue"</span> <span class="ot">=</span>  <span class="st">"#56B4E9"</span>,</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"green"</span><span class="ot">=</span>      <span class="st">"#009E73"</span>,</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">"yellow"</span><span class="ot">=</span>     <span class="st">"#F0E442"</span>,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  <span class="st">"blue"</span><span class="ot">=</span>       <span class="st">"#0072B2"</span>,</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="st">"red"</span><span class="ot">=</span>        <span class="st">"#D55E00"</span>,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  <span class="st">"pink"</span><span class="ot">=</span>       <span class="st">"#CC79A7"</span>,</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  <span class="st">"black"</span><span class="ot">=</span>      <span class="st">"#111111"</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>PLOTS_DIR <span class="ot">&lt;-</span> <span class="st">"part1_figures"</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(PLOTS_DIR, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>, <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="heres-some-data---whats-the-relationship" class="level2">
+<h2 class="anchored" data-anchor-id="heres-some-data---whats-the-relationship">Here’s some data - what’s the relationship?</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2026</span>) <span class="co"># set RNG seed for simpson's data generation</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">simulate_simpson</span>(</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="dv">30</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">r =</span> <span class="sc">-</span><span class="fl">0.6</span>,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">groups =</span> <span class="dv">8</span>,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">difference =</span> <span class="dv">1</span>,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">group_prefix =</span> <span class="st">"G_"</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"X"</span>, <span class="st">"Y"</span>, <span class="st">"Group"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Here, we are generating some data for this tutorial. The options (parameters) we’re passing into this method here allow us to specify exactly the relationship present in this data. Simulated data where we know the exact relationship present in the data is usually a good way to test our understanding when applying a new type of statistical model.</p>
+<p>Typically, R data takes the form of ‘data.frames’ (df): a representation of data in column and row form, much like a spreadsheet.</p>
+<p>When working with new data, whether it is something we’ve generated or loaded in from a .csv file, we should inspect the structure of the data, and visualise relationships between variables in the table:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># What does the table look like?</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(df)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           X         Y Group
+1  1.2924088 0.2983933   G_1
+2  0.3233638 1.9880203   G_1
+3  1.1201403 0.7674235   G_1
+4  1.2494154 1.3037366   G_1
+5  0.6791524 1.6714993   G_1
+6 -0.3442916 3.7334076   G_1</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># What does the relationship look like? (scatter plot of the X and Y variables)</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>X, <span class="at">y=</span>Y))<span class="sc">+</span> </span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part1_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save this plot</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(PLOTS_DIR, <span class="st">'/'</span>, <span class="st">"scatter"</span>, <span class="st">".pdf"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Interesting - it looks like there is a positive linear correlation between the two variables - as X increases, Y also generally increases.</p>
+<p>However, we missed something when we looked at the raw data above - this data actually contains samples from 8 different <strong>groups</strong>. In general, groups in data could be subjects, patients, sites, cells, plants, animals, etc. We should check whether this relationship also holds for the groups within.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Scatter plot, colour by group</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>X, <span class="at">y=</span>Y, <span class="at">color=</span>Group))<span class="sc">+</span> </span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> <span class="fu">scale_colour_manual</span>(<span class="at">values =</span> <span class="fu">unname</span>(okabe_ito))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part1_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(PLOTS_DIR, <span class="st">'/'</span>, <span class="st">"scatter_with_groups"</span>, <span class="st">".pdf"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Wow - it turns out these groups actually each have a <strong>negative</strong> linear correlation - as X increases, Y <strong>decreases</strong>. When viewed together, overlap between groups makes the overall relationship appear positive.</p>
+<p>This is an example of <a href="https://en.wikipedia.org/wiki/Simpson%27s_paradox">Simpson’s Paradox</a> - where the trends in our data change substantially when we consider its <strong>group</strong> structure. <em>Linear mixed effects models</em> can help us account for this, and we’ll see why that is in the following sections.</p>
+</section>
+<section id="but-my-data-doesnt-look-like-simpsons-paradox-why-do-i-need-lmers" class="level2">
+<h2 class="anchored" data-anchor-id="but-my-data-doesnt-look-like-simpsons-paradox-why-do-i-need-lmers">But my data doesn’t look like ‘Simpson’s paradox’: why do I need LMERs?</h2>
+<p>Yes, you don’t need to have this exact situation in your data to use LMERs.</p>
+<p>You might want to use LMERs whenever you have <strong>group structure</strong> in your data. For example, if you wanted to capture the rate of evening melatonin increase over 6 hourly samples for each of 10 study participants, or change in clock gene periodicity over daily samples for plants at 10 different sites. In both cases, each sample is not independent, but related to other samples within the same group. As such, it’s important and beneficial to model that there are group differences, and helps avoid the issue of <a href="https://scienceinsights.org/what-is-pseudoreplication-in-experimental-design/">pseudoreplication</a>.</p>
+</section>
+<section id="linear-regression-models-intercepts-slopes-and-r2" class="level2">
+<h2 class="anchored" data-anchor-id="linear-regression-models-intercepts-slopes-and-r2">Linear regression models, intercepts, slopes, and R<sup>2</sup></h2>
+<p>Let’s make a simple linear regression model for our Simpson’s paradox data.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>simpsons_lm <span class="ot">&lt;-</span> <span class="fu">lm</span>(Y <span class="sc">~</span> X, <span class="at">data=</span>df)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Here, we are setting up a linear regression model (<em>lm</em>) where we define that Y (our response variable) is some function of X (our predictor variable). For example, at any given time, <em>Y</em> might be double the value of <em>X</em> (Y = 2X): if X was 3, Y would be 6, and so on. We would call this a positive linear correlation, with a <em>slope</em> of 2.</p>
+<p>Alternatively, if Y=-2X, we would call this a negative linear correlation with a slope of -2. Fitting a model helps you measure the relationship between your variables. It finds a number for important values such as the slope.</p>
+<p>Finally, we store our model inside a variable called ‘<em>simpsons_lm</em>’ - this isn’t strictly necessary, but is helpful in case we want to look at our model again later.</p>
+<p>OK, let’s look at the output of this model:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(simpsons_lm)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = Y ~ X, data = df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-4.3352 -1.0067 -0.0198  1.1210  3.9655 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)  1.11957    0.22011   5.086  7.4e-07 ***
+X            0.75121    0.04279  17.557  &lt; 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 1.653 on 238 degrees of freedom
+Multiple R-squared:  0.5643,    Adjusted R-squared:  0.5625 
+F-statistic: 308.3 on 1 and 238 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+</div>
+<p>There’s a lot of information here, the most important being the <strong>intercept</strong> and <strong>slope</strong>. We’ve already covered the slope. The intercept is simply the value of Y when X is 0, which offsets the trend (e.g.&nbsp;Y = 2X + Slope). You can find the intercept and slope in the table above, under the first column (‘Estimate’) of the table underneath ‘Coefficients:’.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>simpsons_lm_intercept <span class="ot">&lt;-</span> simpsons_lm<span class="sc">$</span>coefficients[<span class="dv">1</span>]</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>simpsons_lm_slope <span class="ot">&lt;-</span> simpsons_lm<span class="sc">$</span>coefficients[<span class="dv">2</span>]</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste0</span>(<span class="st">"Intercept: "</span>, <span class="fu">round</span>(simpsons_lm_intercept, <span class="dv">5</span>), <span class="st">" Slope: "</span>, <span class="fu">round</span>(simpsons_lm_slope, <span class="dv">5</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Intercept: 1.11957 Slope: 0.75121"</code></pre>
+</div>
+</div>
+<p>To see what these represent, let’s visualise the data and the regression line fit by our model:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>simpsons_lm_rsq <span class="ot">&lt;-</span> <span class="fu">summary</span>(simpsons_lm)<span class="sc">$</span>adj.r.squared</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>simpsons_lm_plot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>X, <span class="at">y=</span>Y))<span class="sc">+</span> </span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"grey"</span>) <span class="sc">+</span> <span class="co"># scatter points</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y=</span><span class="fu">predict</span>(simpsons_lm)), <span class="at">color=</span>okabe_ito[<span class="st">"red"</span>]) <span class="sc">+</span> <span class="co"># add regression line</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x=</span><span class="dv">5</span>, <span class="at">y=</span><span class="dv">10</span>,</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">color=</span>okabe_ito[<span class="st">"red"</span>],</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>           <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">"Intercept: "</span>, <span class="fu">round</span>(simpsons_lm_intercept, <span class="dv">2</span>), <span class="st">" Slope: "</span>, <span class="fu">round</span>(simpsons_lm_slope, <span class="dv">2</span>), <span class="st">" Rsq: "</span>, <span class="fu">round</span>(simpsons_lm_rsq, <span class="dv">2</span>)))</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(simpsons_lm_plot)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part1_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(PLOTS_DIR, <span class="st">'/'</span>, <span class="st">"simpsons_lm"</span>, <span class="st">".pdf"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The model <strong>slope</strong> is 0.75 - as X increases by 1, Y increases by 0.75 (a positive linear correlation).</p>
+<p>The <strong>intercept</strong> - the value of Y when X is 0 - is 1.12.</p>
+<p>To best fit our regression line to the data, the model intercept helps us place our line vertically, and the model slope helps us rotate it. Using our previous notation, this regression line is produced with the formula Y=0.75X + 1.12.</p>
+<p>Not previously mentioned: the model R<sup>2</sup> (<strong><em>Rsq</em></strong>) is 0.56. R<sup>2</sup> is a value that ranges between 0 and 1, that tells us how ‘good’ the fit intercept and slope are at describing the relationship in the data. A value of 1 represents an (unrealistically) perfect fit, where all the points fall on the regression line. A value of 0 means that none of the variability in the data is captured by the model. In reality, values of 0 or 1 are very rare - most fall somewhere in between. 0.56 represents a moderate fit: however we know that this model is mistaken, as it doesn’t consider the group structure. To learn more about R<sup>2</sup>, see <a href="https://en.wikipedia.org/wiki/Coefficient_of_determination">Coefficient of determination</a>.</p>
+<p>However, we know that this is not the true nature of the data. Let’s see how fitting a <em>linear mixed effect regression model</em> (LMER) differs.</p>
+</section>
+<section id="linear-mixed-effect-regression-model-lmer" class="level2">
+<h2 class="anchored" data-anchor-id="linear-mixed-effect-regression-model-lmer">Linear mixed effect regression model (LMER)</h2>
+<p>To fit an LMER, we use a library called ‘lme4’. Libraries extend what we can do with R code, by adding extra functionality.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>simpsons_lmer <span class="ot">&lt;-</span> <span class="fu">lmer</span>(Y <span class="sc">~</span> X <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>Group), <span class="at">data=</span>df)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Just as before, we are setting up a model where we define that Y (our response variable) is some function of X (our predictor variable). In LMER terminology, our predictor X is a ‘<strong>fixed effect</strong>’. It’s something that we assume has a consistent ‘effect’ on the response variable across any groups we have within the data.</p>
+<p>In our visualisation above, we saw that each group in this dataset had a similar negative correlation (i.e, the same slope), but were slightly offset from each other. In an LMER model, we can capture these different group-level offsets using a <strong>random effect</strong>. This is what the new term ‘<em>(1|Group)</em>’ is doing: the intercept (denoted by 1) varies by/is dependent upon the ‘Group’ variable. Even if we aren’t primarily interested in the difference between groups, adding this random effect ensures we are modelling the data properly. The grouping variable must be categorical (a factor), and a good rule-of-thumb is to have at least 5 different groups in your data (e.g 5 subjects or sampling sites), though variance estimates can be unreliable below 10-20 groups.</p>
+<p>Note that LMERs are also referred to as LMMs, mixed-effects models, multilevel models, and hierarchical models.</p>
+<p>Before we look at the LMER output table, let’s first visualise the LMER model:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>simpsons_lmer_summary <span class="ot">&lt;-</span> <span class="fu">summary</span>(simpsons_lmer)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co"># group-level intercepts and slope</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>simpsons_lmer_intercept <span class="ot">&lt;-</span> simpsons_lmer_summary[[<span class="st">"coefficients"</span>]][<span class="dv">1</span>, <span class="dv">1</span>]</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>simpsons_lmer_slope <span class="ot">&lt;-</span> simpsons_lmer_summary[[<span class="st">"coefficients"</span>]][<span class="dv">2</span>, <span class="dv">1</span>] </span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="co"># overall model Rsq</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>simpsons_lmer_rsq <span class="ot">&lt;-</span> <span class="fu">r.squaredGLMM</span>(simpsons_lmer)[<span class="dv">2</span>]</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="co"># plot with per-subject intercepts</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>simpsons_lmer_plot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>X, <span class="at">y=</span>Y, <span class="at">colour=</span>Group))<span class="sc">+</span> </span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha=</span><span class="fl">0.25</span>) <span class="sc">+</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add participant level regression lines</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y=</span><span class="fu">predict</span>(simpsons_lmer))) <span class="sc">+</span> <span class="fu">scale_colour_manual</span>(<span class="at">values =</span> <span class="fu">unname</span>(okabe_ito)) <span class="sc">+</span> </span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add group-level regression line</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_abline</span>(<span class="at">intercept=</span>simpsons_lmer_intercept, <span class="at">slope=</span>simpsons_lmer_slope, <span class="at">linewidth=</span><span class="dv">1</span>, <span class="at">color=</span>okabe_ito[<span class="st">"red"</span>], <span class="at">linetype=</span><span class="st">"dashed"</span>) <span class="sc">+</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>,  <span class="at">x=</span><span class="dv">2</span>, <span class="at">y=</span><span class="dv">9</span>,</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>           <span class="at">color=</span>okabe_ito[<span class="st">"red"</span>],</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>           <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">"Intercept: "</span>, <span class="fu">round</span>(simpsons_lmer_intercept, <span class="dv">2</span>),</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>                        <span class="st">" Slope: "</span>, <span class="fu">round</span>(simpsons_lmer_slope, <span class="dv">2</span>), </span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>                        <span class="st">" Rsq: "</span>, <span class="fu">round</span>(simpsons_lmer_rsq, <span class="dv">2</span>)))</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(simpsons_lmer_plot)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part1_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(PLOTS_DIR, <span class="st">'/'</span>, <span class="st">"simpsons_lmer"</span>, <span class="st">".pdf"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>This looks completely different!</p>
+<p>Each group has its own regression line. They have the same slope, which is now correctly negative. Furthermore, as we specified that the intercept can vary, the regression lines can have different vertical positions, which allows better fit to group data. Consequently, the overall model fit (Rsq=0.96) has drastically improved.</p>
+<p>At this point, we might ask: <strong>why use LMERs for this? Why not just run 8 separate linear regressions, one for each group?</strong> Well, an additional benefit of LMERs is that they implement ‘partial pooling’. We assume the groups are a sample from a larger population (for example, 8 people selected at random: note that the structure of the simpson’s paradox data is quite unrealistic - we’ll see more realistic data in part 2. ). Rather than generate 8 completely unique intercepts (8 separate regressions, or ‘no pooling’), we estimate a common intercept, and model the random intercepts as deviations from this common value. This has the added benefit of using information from groups with more samples to improve the model estimates for groups with fewer samples.</p>
+<p>As such, we get an intercept and slope that represent the common trend across all groups (the dashed red regression line, with intercept 7.15 and slope -0.59), as well as the intercepts for individual groups (which are visualised as regression lines above):</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">coef</span>(simpsons_lmer)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$Group
+    (Intercept)          X
+G_1    1.595661 -0.5877965
+G_2    3.181210 -0.5877965
+G_3    4.766760 -0.5877965
+G_4    6.352309 -0.5877965
+G_5    7.937859 -0.5877965
+G_6    9.523409 -0.5877965
+G_7   11.108958 -0.5877965
+G_8   12.694508 -0.5877965
+
+attr(,"class")
+[1] "coef.mer"</code></pre>
+</div>
+</div>
+<p><strong>As an exercise: fit separate linear models for each group, and compare their intercepts to those provided by the LMER.</strong></p>
+<p>Note that, in this data, only the intercept varies between groups. It is very likely that the slope may vary between groups too, which LMERs can also handle - we’ll cover that in Part 2.</p>
+<p>As before, we can also find these values in the tabular output:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(simpsons_lmer_summary)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear mixed model fit by REML ['lmerMod']
+Formula: Y ~ X + (1 | Group)
+   Data: df
+
+REML criterion at convergence: 627.1
+
+Scaled residuals: 
+     Min       1Q   Median       3Q      Max 
+-2.34012 -0.67944  0.05928  0.63580  3.06541 
+
+Random effects:
+ Groups   Name        Variance Std.Dev.
+ Group    (Intercept) 15.1217  3.8887  
+ Residual              0.6429  0.8018  
+Number of obs: 240, groups:  Group, 8
+
+Fixed effects:
+            Estimate Std. Error t value
+(Intercept)  7.14508    1.39591   5.119
+X           -0.58780    0.05244 -11.209
+
+Correlation of Fixed Effects:
+  (Intr)
+X -0.169</code></pre>
+</div>
+</div>
+<p>Like the table under ‘Coefficients:’ for the linear regression model, we find a table with the model intercept, and slope for the X variable, under ‘Fixed effects:’.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste0</span>(<span class="st">"Intercept: "</span>, <span class="fu">round</span>(simpsons_lmer_intercept, <span class="dv">4</span>), <span class="st">" Slope: "</span>, <span class="fu">round</span>(simpsons_lmer_slope, <span class="dv">4</span>), <span class="st">" Rsq: "</span>, <span class="fu">round</span>(simpsons_lmer_rsq, <span class="dv">2</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Intercept: 7.1451 Slope: -0.5878 Rsq: 0.96"</code></pre>
+</div>
+</div>
+<p>Under ‘Random effects:’, we find useful information on the how well the model captures variance between our groups. This tells us that there is a variance between groups of 15.1217 with a standard deviation of 3.8887, and a residual (unexplained) variance of 0.6429 with standard deviation of 0.8018. As the group standard deviation is larger than the residual, this tells us most variability is between groups, rather than within.</p>
+</section>
+<section id="a-side-note-long-and-wide-data" class="level2">
+<h2 class="anchored" data-anchor-id="a-side-note-long-and-wide-data">A side note: ‘long’ and ‘wide’ data?</h2>
+<p>It should be noted that your data table usually needs to be in ‘long’ format to work with plotting functions and LMERs in R.</p>
+<p>You can check this by looking at the data table structure:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># What does the table look like?</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(df)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           X         Y Group
+1  1.2924088 0.2983933   G_1
+2  0.3233638 1.9880203   G_1
+3  1.1201403 0.7674235   G_1
+4  1.2494154 1.3037366   G_1
+5  0.6791524 1.6714993   G_1
+6 -0.3442916 3.7334076   G_1</code></pre>
+</div>
+</div>
+<p>As the identifying column (Group) is repeated, this is referred to as ‘long’ format, where each row represents a sample.</p>
+<p>If you instead had 1 row per group, this would be ‘wide’ format.</p>
+<p>If your data is in wide format, not to worry - there <a href="https://www.geeksforgeeks.org/r-language/reshaping-data-frame-from-wide-to-long-format-in-r/">are methods in R</a> (and other languages) to help you ‘reshape’ your data from one format to the other.</p>
+<p>You can learn more about wide and long formats <a href="https://www.statology.org/long-vs-wide-data/">here</a>.</p>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<p>In this document, we looked at the importance of capturing group-level differences in data, and how to apply both linear regression models and linear mixed effects regression models in the R programming language.</p>
+<p>Now that we have seen how LMERs work on some toy data, let’s apply them to answer questions in real chronobiological data.</p>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

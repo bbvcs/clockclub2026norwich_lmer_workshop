@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Billy Christopher Smith">
+
+<title>An introduction to linear mixed effects models in chronobiology: Part 2</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="part2_files/libs/clipboard/clipboard.min.js"></script>
+<script src="part2_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="part2_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="part2_files/libs/quarto-html/popper.min.js"></script>
+<script src="part2_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="part2_files/libs/quarto-html/anchor.min.js"></script>
+<link href="part2_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="part2_files/libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="part2_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="part2_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="part2_files/libs/bootstrap/bootstrap-138a6193a3bd40baf1e627da441a4734.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">An introduction to linear mixed effects models in chronobiology: Part 2</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Billy Christopher Smith </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="load-in-packages-and-setup" class="level2">
+<h2 class="anchored" data-anchor-id="load-in-packages-and-setup">Load in Packages, and Setup</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># you may need to run: install.packages(c("dplyr","ggplot2","lme4"","MuMIn", "lmerTest", "patchwork"))</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2) <span class="co"># for plotting</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lme4) <span class="co"># linear mixed effects models (LMER)</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lmerTest) <span class="co"># for lmer p-values</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(MuMIn) <span class="co"># lmer Rsq</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork) <span class="co"># for combining plots</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>okabe_ito <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">"orange"</span> <span class="ot">=</span>    <span class="st">"#E69F00"</span>,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"sky_blue"</span> <span class="ot">=</span>  <span class="st">"#56B4E9"</span>,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"green"</span><span class="ot">=</span>      <span class="st">"#009E73"</span>,</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">"yellow"</span><span class="ot">=</span>     <span class="st">"#F0E442"</span>,</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="st">"blue"</span><span class="ot">=</span>       <span class="st">"#0072B2"</span>,</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="st">"red"</span><span class="ot">=</span>        <span class="st">"#D55E00"</span>,</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="st">"pink"</span><span class="ot">=</span>       <span class="st">"#CC79A7"</span>,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="st">"black"</span><span class="ot">=</span>      <span class="st">"#111111"</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>PLOTS_DIR <span class="ot">&lt;-</span> <span class="st">"part2_figures"</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(PLOTS_DIR, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>, <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="the-data" class="level2">
+<h2 class="anchored" data-anchor-id="the-data">The data:</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"data.csv"</span>, <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">sep =</span> <span class="st">","</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># -- preprocessing  --</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># restrict to daytime window (drop values before 5am)</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> df[df<span class="sc">$</span>pa_daybefore_maxbout_time <span class="sc">&gt;=</span> <span class="dv">5</span>,] </span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(df)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                                                        subject_id age    sex
+1 93c59fc4993620e0c004fb5e44555f4145c2a1a3b50bc1d234e67ab9e358bef7  35 Female
+2 93c59fc4993620e0c004fb5e44555f4145c2a1a3b50bc1d234e67ab9e358bef7  35 Female
+3 93c59fc4993620e0c004fb5e44555f4145c2a1a3b50bc1d234e67ab9e358bef7  35 Female
+4 93c59fc4993620e0c004fb5e44555f4145c2a1a3b50bc1d234e67ab9e358bef7  35 Female
+5 93c59fc4993620e0c004fb5e44555f4145c2a1a3b50bc1d234e67ab9e358bef7  35 Female
+6 93c59fc4993620e0c004fb5e44555f4145c2a1a3b50bc1d234e67ab9e358bef7  35 Female
+  date hr_acrophase pa_daybefore_maxbout_time pa_daybefore_maxbout_time_trait
+1    3      13.7500                   11.9500                         11.0278
+2    4      14.5000                    9.8333                         11.0278
+3    5      14.7500                    9.0833                         11.0278
+4    6      14.0833                   14.3833                         11.0278
+5    7      13.7500                   11.9167                         11.0278
+6    8      13.6667                   10.2167                         11.0278
+  pa_daybefore_maxbout_time_state
+1                          0.9222
+2                         -1.1945
+3                         -1.9445
+4                          3.3555
+5                          0.8889
+6                         -0.8111</code></pre>
+</div>
+</div>
+<p>This data contains: an anonymised identifer column <strong><em>subject_id</em></strong>, <strong><em>age</em></strong> and <strong><em>sex</em></strong>, a day identifier <strong><em>date</em></strong>, acrophase (peak time) of a diurnal rhythm extracted from wearable smartwatch heart rate (HR) data <strong><em>hr_acrophase</em></strong>, and the time at which the most physically active period (‘bout’) of the previous day (date-1) began (<em><strong>pa_daybefore_maxbout_time</strong>)</em>.</p>
+<p>The latter two variables are normalised 24-hour time-of-day variables. For example, 14.5 corresponds to 2:30pm. The variables <em>pa_daybefore_maxbout_time_trait</em> and <em>pa_daybefore_maxbout_time_state</em> can be ignored for now.</p>
+<p>This data was derived from a wearable study of healthy volunteers under free-living (outside of the lab) conditions over 2-4 weeks. For more details, see README.md. There are 104 different subjects represented in this table. With this data, we’ll ask: <strong>“How does <em>when</em> we are most physically active affect our next-day heart rate rhythm timing?”</strong>.</p>
+<p>Firstly, what does the relationship between <em>pa_daybefore_maxbout_time</em> and <em>hr_acrophase</em> look like?</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># -- initial plot --</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>raw_plot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>pa_daybefore_maxbout_time, <span class="at">y=</span>hr_acrophase))<span class="sc">+</span> </span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"grey"</span>) <span class="co"># scatter points</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(raw_plot)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part2_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(PLOTS_DIR, <span class="st">'/'</span>, <span class="st">"unstandardised"</span>, <span class="st">".pdf"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Saving 7 x 5 in image</code></pre>
+</div>
+</div>
+<p>There looks to be a small-moderate positive correlation: later activity timing seems to delay (make later) our HR rhythm timing the following day. However, people have different activity levels, schedules and exercise timing preferences: there might therefore be differences between people (identified by <em>subject_id)</em>, which a LMER is well-suited to account for.</p>
+</section>
+<section id="back-to-basics-a-linear-regression-model-model-a" class="level2">
+<h2 class="anchored" data-anchor-id="back-to-basics-a-linear-regression-model-model-a">Back to basics: a linear regression model (<em>Model A)</em></h2>
+<p>For comparative purposes, let’s ignore the group structure for now and fit a linear model (hr_acrophase ~ pa_daybefore_maxbout_time) to this data.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>model_a <span class="ot">&lt;-</span> <span class="fu">lm</span>(hr_acrophase <span class="sc">~</span> pa_daybefore_maxbout_time, <span class="at">data=</span>df)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model_a)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = hr_acrophase ~ pa_daybefore_maxbout_time, data = df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-7.2607 -1.1435 -0.1097  1.0935  9.2492 
+
+Coefficients:
+                           Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)               13.372676   0.137238   97.44   &lt;2e-16 ***
+pa_daybefore_maxbout_time  0.142292   0.009615   14.80   &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 1.733 on 1683 degrees of freedom
+Multiple R-squared:  0.1151,    Adjusted R-squared:  0.1146 
+F-statistic:   219 on 1 and 1683 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>model_a_rsq <span class="ot">&lt;-</span> <span class="fu">summary</span>(model_a)<span class="sc">$</span>adj.r.squared</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>LABEL_X <span class="ot">=</span> <span class="dv">14</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>LABEL_Y <span class="ot">=</span> <span class="dv">23</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co"># plot model A</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>model_a_intercept <span class="ot">&lt;-</span> model_a<span class="sc">$</span>coefficients[<span class="dv">1</span>]</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>model_a_slope <span class="ot">&lt;-</span> model_a<span class="sc">$</span>coefficients[<span class="dv">2</span>]</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>model_a_plot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>pa_daybefore_maxbout_time, <span class="at">y=</span>hr_acrophase))<span class="sc">+</span> </span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"grey"</span>) <span class="sc">+</span> <span class="co"># scatter points</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y=</span><span class="fu">predict</span>(model_a)), <span class="at">color=</span>okabe_ito[<span class="st">"red"</span>]) <span class="sc">+</span> <span class="co"># add regression line</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x=</span>LABEL_X, <span class="at">y=</span>LABEL_Y,</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>           <span class="at">color=</span>okabe_ito[<span class="st">"red"</span>],</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>           <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">"Intercept: "</span>, <span class="fu">round</span>(model_a_intercept, <span class="dv">2</span>), <span class="st">" Slope: "</span>, <span class="fu">round</span>(model_a_slope, <span class="dv">2</span>), <span class="st">" Rsq: "</span>, <span class="fu">round</span>(model_a_rsq, <span class="dv">2</span>)))</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(PLOTS_DIR, <span class="st">'/'</span>, <span class="st">"model_a"</span>, <span class="st">".pdf"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Saving 7 x 5 in image</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(model_a_plot)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part2_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>There is indeed a weak positive relationship (slope =0.14). The intercept here is 13.37, or 1:22pm. The model fit is weak at Rsq=0.11.</p>
+<p>But we know this data represents 104 different subjects, what do they look like? Let’s pick two of these subjects - one with an earlier than average HR acrophase, and one with a later than average HR acrophase.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># visualise different subjects</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>subject_early <span class="ot">=</span><span class="st">"e4f1d0e8bbc181058f47bdd8d21e88308ffffb722e8a2de203216c76495c2711"</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>subject_late <span class="ot">=</span> <span class="st">"eb03c5e0216ea3832449586327e1754b361f89e0f89435ee452024d1d798bf3c"</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>model_a_plot_2subj <span class="ot">&lt;-</span> model_a_plot <span class="sc">+</span>  </span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data=</span>df[df<span class="sc">$</span>subject_id<span class="sc">==</span>subject_early,], <span class="at">color=</span>okabe_ito[<span class="st">"blue"</span>], <span class="at">size=</span><span class="dv">2</span>) <span class="sc">+</span> </span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data=</span>df[df<span class="sc">$</span>subject_id<span class="sc">==</span>subject_late,], <span class="at">color=</span>okabe_ito[<span class="st">"orange"</span>],<span class="at">size=</span><span class="dv">2</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(PLOTS_DIR, <span class="st">'/'</span>, <span class="st">"model_a_2subj"</span>, <span class="st">".pdf"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Saving 7 x 5 in image</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(model_a_plot_2subj)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part2_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>For the earlier subject (blue), it looks like their data follows a similar trend of a weak positive correlation. However, for the later subject (orange), there appears to be a weak negative correlation. These between-subject differences in average acrophase and activity-acrophase trend are probably contributing to the poor model fit. With this group structure, an LMER would be a better option.</p>
+</section>
+<section id="subject-level-intercept-using-lmers-model-b" class="level2">
+<h2 class="anchored" data-anchor-id="subject-level-intercept-using-lmers-model-b">Subject-level intercept using LMERs (<em>Model B)</em></h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>model_b <span class="ot">&lt;-</span> <span class="fu">lmer</span>(hr_acrophase <span class="sc">~</span> pa_daybefore_maxbout_time <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>subject_id), <span class="at">data=</span>df)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Here, we’ve added a subject-level random intercept, by switching to lmer() and adding a (1|subject_id) term to the formula.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>model_b_summary <span class="ot">&lt;-</span> <span class="fu">summary</span>(model_b)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(model_b_summary)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: hr_acrophase ~ pa_daybefore_maxbout_time + (1 | subject_id)
+   Data: df
+
+REML criterion at convergence: 5098.7
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-4.1255 -0.5223 -0.0373  0.5117  4.3345 
+
+Random effects:
+ Groups     Name        Variance Std.Dev.
+ subject_id (Intercept) 3.2481   1.802   
+ Residual               0.9468   0.973   
+Number of obs: 1685, groups:  subject_id, 104
+
+Fixed effects:
+                           Estimate Std. Error        df t value Pr(&gt;|t|)    
+(Intercept)               1.480e+01  1.977e-01 1.413e+02  74.825  &lt; 2e-16 ***
+pa_daybefore_maxbout_time 4.312e-02  6.032e-03 1.589e+03   7.148 1.34e-12 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+            (Intr)
+p_dybfr_mx_ -0.420</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>model_b_intercept <span class="ot">&lt;-</span> model_b_summary[[<span class="st">"coefficients"</span>]][<span class="dv">1</span>, <span class="dv">1</span>]</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>model_b_slope <span class="ot">&lt;-</span> model_b_summary[[<span class="st">"coefficients"</span>]][<span class="dv">2</span>, <span class="dv">1</span>]</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>model_b_rsq <span class="ot">&lt;-</span> <span class="fu">r.squaredGLMM</span>(model_b)[<span class="dv">2</span>]</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste0</span>(<span class="st">"Intercept: "</span>, <span class="fu">round</span>(model_b_intercept, <span class="dv">5</span>), <span class="st">" Slope: "</span>, <span class="fu">round</span>(model_b_slope, <span class="dv">5</span>), <span class="st">" Rsq: "</span>, <span class="fu">round</span>(model_b_rsq, <span class="dv">5</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Intercept: 14.79523 Slope: 0.04311 Rsq: 0.7762"</code></pre>
+</div>
+</div>
+<p>We get an updated estimate of the common cohort-level intercept (14.79, or 2:47pm), which takes into account the distribution of the individual subject intercepts. The common slope is even weaker at 0.04, however we have seen already that there is likely some variation in slope across the cohort. But crucially, the model fit is greatly improved, at Rsq=0.78 - much more variation in the data is now accounted for.</p>
+<p>(A technical note: this is a specific type of R<sup>2</sup> called ‘conditional R<sup>2</sup>’, that takes into account the variance explained by both the model fixed and random effects. We could also look at ‘marginal R<sup>2</sup>’ using r.squaredGLMM(model_b)[1], which considers only fixed effects - you should typically report both.)</p>
+<p>Looking at the random effects table, we see that the standard deviation of the intercept (1.802) is double the standard deviation of the residual (0.973), telling us we have more between-subject variability than within-subject.</p>
+<p>OK, what do these subject-level intercepts look like?</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot with per-subject intercepts</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>model_b_plot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>pa_daybefore_maxbout_time, <span class="at">y=</span>hr_acrophase, <span class="at">colour=</span>subject_id))<span class="sc">+</span> </span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add subject level regression lines</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y=</span><span class="fu">predict</span>(model_b)), <span class="at">alpha=</span><span class="fl">0.5</span>) <span class="sc">+</span> </span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add group-level regression line </span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_abline</span>(<span class="at">intercept=</span>model_b_intercept, <span class="at">slope=</span>model_b_slope, <span class="at">linewidth=</span><span class="dv">1</span>, <span class="at">color=</span>okabe_ito[<span class="st">"red"</span>]) <span class="sc">+</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x=</span>LABEL_X, <span class="at">y=</span>LABEL_Y,</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">color=</span>okabe_ito[<span class="st">"red"</span>],</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">"Cohort intercept: "</span>, <span class="fu">round</span>(model_b_intercept, <span class="dv">2</span>), </span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>                        <span class="st">" Cohort slope: "</span>, <span class="fu">round</span>(model_b_slope, <span class="dv">2</span>), </span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>                        <span class="st">" Rsq: "</span>, <span class="fu">round</span>(model_b_rsq, <span class="dv">2</span>))) <span class="sc">+</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># remove the legend</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position=</span><span class="st">"none"</span>)</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(PLOTS_DIR, <span class="st">'/'</span>, <span class="st">"model_b_overall"</span>, <span class="st">".pdf"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Saving 7 x 5 in image</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(model_b_plot)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part2_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Wow - with 104 subjects, this is quite difficult to pick apart. Let’s focus on our two example subjects from before.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># highlight two subjects from before</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>model_b_predict <span class="ot">&lt;-</span> <span class="fu">predict</span>(model_b)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="co"># get individual intercept for each subject</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>model_b_coefs <span class="ot">&lt;-</span> <span class="fu">coef</span>(model_b)<span class="sc">$</span>subject_id</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>model_b_subj_early_intercept <span class="ot">&lt;-</span> model_b_coefs[subject_early, <span class="st">"(Intercept)"</span>]</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>model_b_subj_late_intercept <span class="ot">&lt;-</span> model_b_coefs[subject_late, <span class="st">"(Intercept)"</span>]</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>model_b_plot_2subj <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>pa_daybefore_maxbout_time, <span class="at">y=</span>hr_acrophase))<span class="sc">+</span> </span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"grey"</span>) <span class="sc">+</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data=</span>df[df<span class="sc">$</span>subject_id<span class="sc">==</span>subject_early,], <span class="at">color=</span>okabe_ito[<span class="st">"blue"</span>], <span class="at">size=</span><span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>df[df<span class="sc">$</span>subject_id<span class="sc">==</span>subject_early,], <span class="fu">aes</span>(<span class="at">y=</span>model_b_predict), <span class="at">color=</span>okabe_ito[<span class="st">"blue"</span>]) <span class="sc">+</span></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x=</span>LABEL_X, <span class="at">y=</span>model_b_subj_early_intercept<span class="dv">-2</span>,</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>           <span class="at">color=</span>okabe_ito[<span class="st">"blue"</span>],</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>           <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">"Subject intercept: "</span>, <span class="fu">round</span>(model_b_subj_early_intercept, <span class="dv">2</span>))) <span class="sc">+</span></span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data=</span>df[df<span class="sc">$</span>subject_id<span class="sc">==</span>subject_late,], <span class="at">color=</span>okabe_ito[<span class="st">"orange"</span>], <span class="at">size=</span><span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>df[df<span class="sc">$</span>subject_id<span class="sc">==</span>subject_late,], <span class="fu">aes</span>(<span class="at">y=</span>model_b_predict), <span class="at">color=</span>okabe_ito[<span class="st">"orange"</span>]) <span class="sc">+</span></span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x=</span>LABEL_X, <span class="at">y=</span>model_b_subj_late_intercept<span class="sc">+</span><span class="dv">4</span>,</span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a>           <span class="at">color=</span>okabe_ito[<span class="st">"orange"</span>],</span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a>           <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">"Subject intercept: "</span>, <span class="fu">round</span>(model_b_subj_late_intercept, <span class="dv">2</span>))) <span class="sc">+</span></span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add group-level regression line </span></span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_abline</span>(<span class="at">intercept=</span>model_b_intercept, <span class="at">slope=</span>model_b_slope, <span class="at">linewidth=</span><span class="dv">1</span>, <span class="at">color=</span>okabe_ito[<span class="st">"red"</span>]) <span class="sc">+</span></span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x=</span>LABEL_X, <span class="at">y=</span>LABEL_Y,</span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a>           <span class="at">color=</span>okabe_ito[<span class="st">"red"</span>],</span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a>           <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">"Cohort intercept: "</span>, <span class="fu">round</span>(model_b_intercept, <span class="dv">2</span>), </span>
+<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a>                        <span class="st">" Cohort slope: "</span>, <span class="fu">round</span>(model_b_slope, <span class="dv">2</span>),</span>
+<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a>                        <span class="st">" Rsq: "</span>, <span class="fu">round</span>(model_b_rsq, <span class="dv">2</span>))) </span>
+<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-33"><a href="#cb23-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-34"><a href="#cb23-34" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(PLOTS_DIR, <span class="st">'/'</span>, <span class="st">"model_b_2subj"</span>, <span class="st">".pdf"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Saving 7 x 5 in image</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(model_b_plot_2subj)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part2_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>For the earlier subject, their individual fit looks good. For the later subject, their fit isn’t terrible, but it does look like a flatter slope would be more suitable.</p>
+</section>
+<section id="subject-level-intercepts-and-slopes-using-lmers-model-c" class="level2">
+<h2 class="anchored" data-anchor-id="subject-level-intercepts-and-slopes-using-lmers-model-c">Subject-level intercepts and slopes using LMERs (<em>Model C)</em></h2>
+<p>With LMERs, we can also allow individual subject slopes to vary from the overall cohort estimate. Let’s see what that looks like in terms of the model formula:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># -- model c: introduce subject random slope --</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>model_c <span class="ot">&lt;-</span> <span class="fu">lmer</span>(hr_acrophase <span class="sc">~</span> pa_daybefore_maxbout_time <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">+</span> pa_daybefore_maxbout_time<span class="sc">|</span>subject_id), <span class="at">data=</span>df)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Here, we’ve changed the term “(1|subject_id)” to “(1 + pa_daybefore_maxbout_time|subject_id)”, to specify that both the intercept (represented by 1) <strong>and</strong> the slope for pa_daybefore_maxbout_time are allowed to vary by subject_id.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>model_c_summary <span class="ot">&lt;-</span> <span class="fu">summary</span>(model_c)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(model_c_summary)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: 
+hr_acrophase ~ pa_daybefore_maxbout_time + (1 + pa_daybefore_maxbout_time |  
+    subject_id)
+   Data: df
+
+REML criterion at convergence: 5084.2
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-4.4426 -0.5245 -0.0436  0.5111  4.3837 
+
+Random effects:
+ Groups     Name                      Variance Std.Dev. Corr  
+ subject_id (Intercept)               2.92559  1.7104         
+            pa_daybefore_maxbout_time 0.00252  0.0502   -0.10 
+ Residual                             0.91200  0.9550         
+Number of obs: 1685, groups:  subject_id, 104
+
+Fixed effects:
+                           Estimate Std. Error        df t value Pr(&gt;|t|)    
+(Intercept)               14.752964   0.191700 79.722530  76.959  &lt; 2e-16 ***
+pa_daybefore_maxbout_time  0.044703   0.008065 65.031696   5.543 5.81e-07 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+            (Intr)
+p_dybfr_mx_ -0.415</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>model_c_intercept <span class="ot">&lt;-</span> model_c_summary[[<span class="st">"coefficients"</span>]][<span class="dv">1</span>, <span class="dv">1</span>]</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>model_c_slope <span class="ot">&lt;-</span> model_c_summary[[<span class="st">"coefficients"</span>]][<span class="dv">2</span>, <span class="dv">1</span>]</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>model_c_rsq <span class="ot">&lt;-</span> <span class="fu">r.squaredGLMM</span>(model_c)[<span class="dv">2</span>]</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste0</span>(<span class="st">"Intercept: "</span>, <span class="fu">round</span>(model_c_intercept, <span class="dv">5</span>), <span class="st">" Slope: "</span>, <span class="fu">round</span>(model_c_slope, <span class="dv">5</span>), <span class="st">" Rsq: "</span>, <span class="fu">round</span>(model_c_rsq, <span class="dv">5</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Intercept: 14.75296 Slope: 0.0447 Rsq: 0.78046"</code></pre>
+</div>
+</div>
+<p>How does this model compare to our random intercepts-only model?</p>
+<p>The intercept and slope have mainly stayed the same, and the rsq has marginally improved from 0.7762 to 0.7805. While the model is certainly a better fit, the main gain from adding random slopes is substantially reducing the degrees of freedom (df) for pa_daybefore_maxbout_time.</p>
+<p>Let’s visualise this again, for all subjects and for our two selected subjects.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot with per-subject intercepts and slopes</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>model_c_plot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>pa_daybefore_maxbout_time, <span class="at">y=</span>hr_acrophase, <span class="at">colour=</span>subject_id))<span class="sc">+</span> </span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add subject level regression lines</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y=</span><span class="fu">predict</span>(model_c)), <span class="at">alpha=</span><span class="fl">0.5</span>) <span class="sc">+</span> </span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add group-level regression line </span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_abline</span>(<span class="at">intercept=</span>model_c_intercept, <span class="at">slope=</span>model_c_slope, <span class="at">linewidth=</span><span class="dv">1</span>, <span class="at">color=</span>okabe_ito[<span class="st">"red"</span>]) <span class="sc">+</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x=</span>LABEL_X, <span class="at">y=</span>LABEL_Y,</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">color=</span>okabe_ito[<span class="st">"red"</span>],</span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">"Cohort intercept: "</span>, <span class="fu">round</span>(model_c_intercept, <span class="dv">2</span>), </span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>                        <span class="st">" Cohort slope: "</span>, <span class="fu">round</span>(model_c_slope, <span class="dv">2</span>),</span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>                        <span class="st">" Rsq: "</span>, <span class="fu">round</span>(model_c_rsq, <span class="dv">2</span>))) <span class="sc">+</span></span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># remove the legend</span></span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position=</span><span class="st">"none"</span>)</span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(PLOTS_DIR, <span class="st">'/'</span>, <span class="st">"model_c_overall"</span>, <span class="st">".pdf"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Saving 7 x 5 in image</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(model_c_plot)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part2_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># highlight two subjects from before</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>model_c_predict <span class="ot">&lt;-</span> <span class="fu">predict</span>(model_c)</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="co"># get individual intercept and slope for each subject</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>model_c_coefs <span class="ot">&lt;-</span> <span class="fu">coef</span>(model_c)<span class="sc">$</span>subject_id</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>model_c_subj_early_intercept <span class="ot">&lt;-</span> model_c_coefs[subject_early, <span class="st">"(Intercept)"</span>]</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>model_c_subj_early_slope <span class="ot">&lt;-</span> model_c_coefs[subject_early, <span class="st">"pa_daybefore_maxbout_time"</span>]</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>model_c_subj_late_intercept <span class="ot">&lt;-</span> model_c_coefs[subject_late, <span class="st">"(Intercept)"</span>]</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>model_c_subj_late_slope <span class="ot">&lt;-</span> model_c_coefs[subject_late, <span class="st">"pa_daybefore_maxbout_time"</span>]</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a>model_c_plot_2subj <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>pa_daybefore_maxbout_time, <span class="at">y=</span>hr_acrophase))<span class="sc">+</span> </span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"grey"</span>) <span class="sc">+</span></span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data=</span>df[df<span class="sc">$</span>subject_id<span class="sc">==</span>subject_early,], <span class="at">color=</span>okabe_ito[<span class="st">"blue"</span>], <span class="at">size=</span><span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>df[df<span class="sc">$</span>subject_id<span class="sc">==</span>subject_early,], <span class="fu">aes</span>(<span class="at">y=</span>model_c_predict), <span class="at">color=</span>okabe_ito[<span class="st">"blue"</span>]) <span class="sc">+</span></span>
+<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x=</span>LABEL_X, <span class="at">y=</span>model_c_subj_early_intercept<span class="dv">-2</span>,</span>
+<span id="cb34-16"><a href="#cb34-16" aria-hidden="true" tabindex="-1"></a>           <span class="at">color=</span>okabe_ito[<span class="st">"blue"</span>],</span>
+<span id="cb34-17"><a href="#cb34-17" aria-hidden="true" tabindex="-1"></a>           <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">"Subject intercept: "</span>, <span class="fu">round</span>(model_c_subj_early_intercept, <span class="dv">2</span>), <span class="st">" Subject slope: "</span>, <span class="fu">round</span>(model_c_subj_early_slope, <span class="dv">2</span>))) <span class="sc">+</span></span>
+<span id="cb34-18"><a href="#cb34-18" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb34-19"><a href="#cb34-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data=</span>df[df<span class="sc">$</span>subject_id<span class="sc">==</span>subject_late,], <span class="at">color=</span>okabe_ito[<span class="st">"orange"</span>], <span class="at">size=</span><span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb34-20"><a href="#cb34-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">data=</span>df[df<span class="sc">$</span>subject_id<span class="sc">==</span>subject_late,], <span class="fu">aes</span>(<span class="at">y=</span>model_c_predict), <span class="at">color=</span>okabe_ito[<span class="st">"orange"</span>]) <span class="sc">+</span></span>
+<span id="cb34-21"><a href="#cb34-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x=</span>LABEL_X, <span class="at">y=</span>model_c_subj_late_intercept<span class="sc">+</span><span class="dv">4</span>,</span>
+<span id="cb34-22"><a href="#cb34-22" aria-hidden="true" tabindex="-1"></a>           <span class="at">color=</span>okabe_ito[<span class="st">"orange"</span>],</span>
+<span id="cb34-23"><a href="#cb34-23" aria-hidden="true" tabindex="-1"></a>           <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">"Subject intercept: "</span>, <span class="fu">round</span>(model_c_subj_late_intercept, <span class="dv">2</span>), <span class="st">" Subject slope: "</span>, <span class="fu">round</span>(model_c_subj_late_slope, <span class="dv">2</span>))) <span class="sc">+</span></span>
+<span id="cb34-24"><a href="#cb34-24" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb34-25"><a href="#cb34-25" aria-hidden="true" tabindex="-1"></a>  <span class="co"># add group-level regression line </span></span>
+<span id="cb34-26"><a href="#cb34-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_abline</span>(<span class="at">intercept=</span>model_c_intercept, <span class="at">slope=</span>model_c_slope, <span class="at">linewidth=</span><span class="dv">1</span>, <span class="at">color=</span>okabe_ito[<span class="st">"red"</span>]) <span class="sc">+</span></span>
+<span id="cb34-27"><a href="#cb34-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x=</span>LABEL_X, <span class="at">y=</span>LABEL_Y,</span>
+<span id="cb34-28"><a href="#cb34-28" aria-hidden="true" tabindex="-1"></a>           <span class="at">color=</span>okabe_ito[<span class="st">"red"</span>],</span>
+<span id="cb34-29"><a href="#cb34-29" aria-hidden="true" tabindex="-1"></a>           <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">"Cohort intercept: "</span>, <span class="fu">round</span>(model_c_intercept, <span class="dv">2</span>),</span>
+<span id="cb34-30"><a href="#cb34-30" aria-hidden="true" tabindex="-1"></a>                        <span class="st">" Cohort slope: "</span>, <span class="fu">round</span>(model_c_slope, <span class="dv">2</span>),</span>
+<span id="cb34-31"><a href="#cb34-31" aria-hidden="true" tabindex="-1"></a>                        <span class="st">" Rsq: "</span>, <span class="fu">round</span>(model_c_rsq, <span class="dv">2</span>)))</span>
+<span id="cb34-32"><a href="#cb34-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-33"><a href="#cb34-33" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(PLOTS_DIR, <span class="st">'/'</span>, <span class="st">"model_c_2subj"</span>, <span class="st">".pdf"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Saving 7 x 5 in image</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(model_c_plot_2subj)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part2_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We see that the model is able to fit a slightly flatter slope (0.01) for the later subject, which fits their data better. However, it is not negative as we might have expected from eyeballing the data. This is an example of the ‘partial pooling’ mentioned in Part 1 - because the trend for this subject would differ from most others, and the sample size for this specific subject is quite low, the model borrows from the overall cohort fit, and adjusts their trend accordingly.</p>
+<p>Conversely, the slope of the earlier subject (0.03) doesn’t require much adjustment from the overall cohort slope of 0.04. To bring this back to our original aim: the next-day heart rate acrophase is delayed as activity occurs later, with some variation between subjects.</p>
+<p>What is the distribution of these slopes across all subjects?</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># but what do slopes look like overall?</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>model_c_slopes_mean <span class="ot">&lt;-</span> <span class="fu">mean</span>(model_c_coefs<span class="sc">$</span>pa_daybefore_maxbout_time)</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(model_c_coefs, <span class="fu">aes</span>(<span class="at">x=</span>pa_daybefore_maxbout_time)) <span class="sc">+</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">fill=</span><span class="st">"grey"</span>, <span class="at">alpha=</span><span class="fl">0.7</span>) <span class="sc">+</span> </span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># mean</span></span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> model_c_slopes_mean,</span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>             <span class="at">colour =</span> okabe_ito[<span class="st">"red"</span>], <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">linewidth =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x=</span>model_c_slopes_mean, <span class="at">y=</span><span class="dv">15</span>,</span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>           <span class="at">color=</span>okabe_ito[<span class="st">"red"</span>],</span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a>           <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">"Mean of subject slopes: "</span>, <span class="fu">round</span>(model_c_slopes_mean, <span class="dv">4</span>),</span>
+<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"</span><span class="sc">\n</span><span class="st">(same as group-level slope): "</span>, <span class="fu">round</span>(model_c_slope, <span class="dv">4</span>))) <span class="sc">+</span></span>
+<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb37-17"><a href="#cb37-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># early subj</span></span>
+<span id="cb37-18"><a href="#cb37-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_segment</span>(<span class="fu">aes</span>(<span class="at">x =</span> model_c_subj_early_slope, <span class="at">y =</span> <span class="sc">-</span><span class="dv">2</span>, </span>
+<span id="cb37-19"><a href="#cb37-19" aria-hidden="true" tabindex="-1"></a>                   <span class="at">xend =</span> model_c_subj_early_slope, <span class="at">yend =</span> <span class="dv">0</span>),</span>
+<span id="cb37-20"><a href="#cb37-20" aria-hidden="true" tabindex="-1"></a>               <span class="at">arrow =</span> <span class="fu">arrow</span>(),  </span>
+<span id="cb37-21"><a href="#cb37-21" aria-hidden="true" tabindex="-1"></a>               <span class="at">size =</span> <span class="dv">1</span>,</span>
+<span id="cb37-22"><a href="#cb37-22" aria-hidden="true" tabindex="-1"></a>               <span class="at">colour =</span> okabe_ito[<span class="st">"blue"</span>]) <span class="sc">+</span></span>
+<span id="cb37-23"><a href="#cb37-23" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb37-24"><a href="#cb37-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x=</span>model_c_subj_early_slope <span class="sc">+</span> <span class="fl">0.01</span>, <span class="at">y=</span><span class="sc">-</span><span class="fl">2.2</span>,</span>
+<span id="cb37-25"><a href="#cb37-25" aria-hidden="true" tabindex="-1"></a>           <span class="at">color=</span>okabe_ito[<span class="st">"blue"</span>],</span>
+<span id="cb37-26"><a href="#cb37-26" aria-hidden="true" tabindex="-1"></a>           <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">"slope="</span>,<span class="fu">round</span>(model_c_subj_early_slope, <span class="dv">2</span>))) <span class="sc">+</span></span>
+<span id="cb37-27"><a href="#cb37-27" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb37-28"><a href="#cb37-28" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb37-29"><a href="#cb37-29" aria-hidden="true" tabindex="-1"></a>  <span class="co"># late subj</span></span>
+<span id="cb37-30"><a href="#cb37-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_segment</span>(<span class="fu">aes</span>(<span class="at">x =</span> model_c_subj_late_slope, <span class="at">y =</span> <span class="sc">-</span><span class="dv">2</span>, </span>
+<span id="cb37-31"><a href="#cb37-31" aria-hidden="true" tabindex="-1"></a>                   <span class="at">xend =</span> model_c_subj_late_slope, <span class="at">yend =</span> <span class="dv">0</span>),</span>
+<span id="cb37-32"><a href="#cb37-32" aria-hidden="true" tabindex="-1"></a>               <span class="at">arrow =</span> <span class="fu">arrow</span>(),  </span>
+<span id="cb37-33"><a href="#cb37-33" aria-hidden="true" tabindex="-1"></a>               <span class="at">size =</span> <span class="dv">1</span>,</span>
+<span id="cb37-34"><a href="#cb37-34" aria-hidden="true" tabindex="-1"></a>               <span class="at">colour =</span> okabe_ito[<span class="st">"orange"</span>]) <span class="sc">+</span></span>
+<span id="cb37-35"><a href="#cb37-35" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb37-36"><a href="#cb37-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x=</span>model_c_subj_late_slope, <span class="at">y=</span><span class="sc">-</span><span class="fl">2.2</span>,</span>
+<span id="cb37-37"><a href="#cb37-37" aria-hidden="true" tabindex="-1"></a>           <span class="at">color=</span>okabe_ito[<span class="st">"orange"</span>],</span>
+<span id="cb37-38"><a href="#cb37-38" aria-hidden="true" tabindex="-1"></a>           <span class="at">label=</span><span class="fu">paste0</span>(<span class="st">"slope="</span>,<span class="fu">round</span>(model_c_subj_late_slope, <span class="dv">2</span>))) <span class="sc">+</span></span>
+<span id="cb37-39"><a href="#cb37-39" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb37-40"><a href="#cb37-40" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb37-41"><a href="#cb37-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">"Number of subjects"</span>, <span class="at">title=</span><span class="st">"Distribution of per-subject slopes"</span>) </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+ℹ Please use `linewidth` instead.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in geom_segment(aes(x = model_c_subj_early_slope, y = -2, xend = model_c_subj_early_slope, : All aesthetics have length 1, but the data has 104 rows.
+ℹ Please consider using `annotate()` or provide this layer with data containing
+  a single row.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in geom_segment(aes(x = model_c_subj_late_slope, y = -2, xend = model_c_subj_late_slope, : All aesthetics have length 1, but the data has 104 rows.
+ℹ Please consider using `annotate()` or provide this layer with data containing
+  a single row.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`stat_bin()` using `bins = 30`. Pick better value `binwidth`.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part2_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(PLOTS_DIR, <span class="st">'/'</span>, <span class="st">"model_c_slopedist"</span>, <span class="st">".pdf"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Saving 7 x 5 in image</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in geom_segment(aes(x = model_c_subj_early_slope, y = -2, xend = model_c_subj_early_slope, : All aesthetics have length 1, but the data has 104 rows.
+ℹ Please consider using `annotate()` or provide this layer with data containing
+  a single row.
+All aesthetics have length 1, but the data has 104 rows.
+ℹ Please consider using `annotate()` or provide this layer with data containing
+  a single row.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`stat_bin()` using `bins = 30`. Pick better value `binwidth`.</code></pre>
+</div>
+</div>
+<p>Note that when adding random effects (intercepts and slopes), you may see singular fits / boundary convergance warnings. These often occur because too many have been added, and the random effects structure needs to be simplified.</p>
+<p>OK, what else can we do with LMERs?</p>
+</section>
+<section id="standardisation-and-additional-fixed-effects-model-d" class="level2">
+<h2 class="anchored" data-anchor-id="standardisation-and-additional-fixed-effects-model-d">Standardisation, and additional fixed effects (<em>Model D)</em></h2>
+<p>In our original data table, we saw that we also have age and sex data for these subjects.</p>
+<p>Often when performing analysis, we either want to also investigate the effects age and sex have on our response variable (hr_acrophase), or account/adjust for them so that we are observing the unique effects of our predictor of interest (pa_daybefore_maxbout_time). LMERs also allow us to easily to do both of these simultaneously by fitting <strong>multiple fixed effects</strong> (simply adding age and sex to the model formula). We get independent slope values for each fixed effect, which represent the relationship between that variable and the response (hr_acrophase) when the relationships between predictors have been removed.</p>
+<p>But first, when we are fitting a model with multiple predictors, it is good practice to <em>standardise</em> them (subtract the mean, and adjust so they have a standard deviation of 1), to make it easier to directly compare their effects on the response variable.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># when you have multiple explanatory variables, good practice to standardise </span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a><span class="co"># (mean of zero (“centering”) and standard deviation of one (“scaling”))</span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a><span class="co"># so that it is easier to compare their effect sizes</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (col <span class="cf">in</span> <span class="fu">c</span>(<span class="st">"age"</span>, <span class="st">"pa_daybefore_maxbout_time_trait"</span>, <span class="st">"pa_daybefore_maxbout_time_state"</span>, <span class="st">"pa_daybefore_maxbout_time"</span>)) {</span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>  df[col] <span class="ot">=</span> <span class="fu">scale</span>(df[col], <span class="at">center=</span><span class="cn">TRUE</span>, <span class="at">scale=</span><span class="cn">TRUE</span>)</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a><span class="co"># what does standardised variables look like</span></span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>standardised_plot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>pa_daybefore_maxbout_time, <span class="at">y=</span>hr_acrophase))<span class="sc">+</span> </span>
+<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"grey"</span>) <span class="sc">+</span> <span class="co"># scatter points</span></span>
+<span id="cb46-11"><a href="#cb46-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Standardised"</span>)</span>
+<span id="cb46-12"><a href="#cb46-12" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(standardised_plot)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part2_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(PLOTS_DIR, <span class="st">'/'</span>, <span class="st">"standardised"</span>, <span class="st">".pdf"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Saving 7 x 5 in image</code></pre>
+</div>
+</div>
+<p>Note that pa_daybefore_maxbout_time still has the same relationship with hr_acrophase, but its values have now been adjusted.</p>
+<p>Let’s add the age and sex terms to our model.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>model_d <span class="ot">&lt;-</span> <span class="fu">lmer</span>(hr_acrophase <span class="sc">~</span> pa_daybefore_maxbout_time <span class="sc">+</span> age <span class="sc">+</span> sex <span class="sc">+</span> (<span class="dv">1</span><span class="sc">+</span>pa_daybefore_maxbout_time<span class="sc">|</span>subject_id), <span class="at">data=</span>df)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model_d)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: 
+hr_acrophase ~ pa_daybefore_maxbout_time + age + sex + (1 + pa_daybefore_maxbout_time |  
+    subject_id)
+   Data: df
+
+REML criterion at convergence: 5074.3
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-4.4192 -0.5281 -0.0403  0.5099  4.3951 
+
+Random effects:
+ Groups     Name                      Variance Std.Dev. Corr 
+ subject_id (Intercept)               2.90192  1.7035        
+            pa_daybefore_maxbout_time 0.04697  0.2167   0.20 
+ Residual                             0.91267  0.9553        
+Number of obs: 1685, groups:  subject_id, 104
+
+Fixed effects:
+                          Estimate Std. Error       df t value Pr(&gt;|t|)    
+(Intercept)               15.18526    0.21882 92.53703  69.397  &lt; 2e-16 ***
+pa_daybefore_maxbout_time  0.19439    0.03523 65.14005   5.518 6.36e-07 ***
+age                       -0.52775    0.17323 90.36095  -3.047  0.00303 ** 
+sexMale                    0.26456    0.35089 90.99179   0.754  0.45282    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+            (Intr) p_dy__ age   
+p_dybfr_mx_  0.099              
+age          0.191  0.034       
+sexMale     -0.618 -0.007 -0.118</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>model_d_rsq <span class="ot">&lt;-</span> <span class="fu">r.squaredGLMM</span>(model_d)[<span class="dv">2</span>]</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste0</span>(<span class="st">"Rsq: "</span>, <span class="fu">round</span>(model_d_rsq, <span class="dv">5</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Rsq: 0.78366"</code></pre>
+</div>
+</div>
+<p>We now have additional rows in our fixed effects table for both the age and sex effects. Crucially, we see age has a strong <strong>negative</strong> relationship (estimate -0.528) with hr_acrophase - as we get older, our heart rate acrophase advances.</p>
+<p>Note that because we loaded the <em>lmerTest</em> library, estimated p-values are also displayed for each fixed effect. These tell us our estimates for pa_daybefore_maxbout_time and age are significant, however the estimate for sex is not. This doesn’t mean we shouldn’t include sex as an effect, however - in this case, we want to ensure we remove any sex effects, even if the effect is minimal.</p>
+</section>
+<section id="separating-lifestyle-predictors-into-traits-and-states-model-e" class="level2">
+<h2 class="anchored" data-anchor-id="separating-lifestyle-predictors-into-traits-and-states-model-e">Separating lifestyle predictors into ‘traits’ and ‘states’ (<em>Model E)</em></h2>
+<p>So it looks like pa_daybefore_maxbout_time has an effect on hr_acrophase. However, as this is free-living data, it is likely that there is substantial differences in the nature of pa_daybefore_maxbout_time between subjects: people have different work schedules and exercise timing preferences. Under the ‘within-between’ framework, we split such variables into the per-subject mean (their typical most-physically-active time), and the daily deviations (how much earlier or later this is than usual on a given day) from that mean. Doing so allows us to separately measure how lifestyle affects between- and within-subject variability of hr_acrophase. Borrowing terminology from psychology, we call these per-subject means ‘traits’, and daily deviations ‘states’.</p>
+<p>Earlier, we saw that we also have variables <em>pa_daybefore_maxbout_time_trait</em> and <em>pa_daybefore_maxbout_time_state</em> in this table. These are derived from pa_daybefore_maxbout_time, by taking the mean across the recording for a subject, and daily deviations from that mean respectively. If we added the trait and state variables back together, we would get our original pa_daybefore_maxbout_time.</p>
+<p>Here’s what these variables look like compared to our previous pa_daybefore_maxbout_time.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="co"># -- model e: introduce trait/state --</span></span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a>trait <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>pa_daybefore_maxbout_time_trait, <span class="at">y=</span>hr_acrophase))<span class="sc">+</span> </span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"grey"</span>) <span class="sc">+</span> </span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Trait (subject-level average)"</span>)</span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a>state <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>pa_daybefore_maxbout_time_state, <span class="at">y=</span>hr_acrophase))<span class="sc">+</span> </span>
+<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"grey"</span>) <span class="sc">+</span> </span>
+<span id="cb54-9"><a href="#cb54-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"State (day-level deviation from average)"</span>)</span>
+<span id="cb54-10"><a href="#cb54-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-11"><a href="#cb54-11" aria-hidden="true" tabindex="-1"></a>trait_and_state <span class="ot">&lt;-</span> standardised_plot <span class="sc">+</span> trait <span class="sc">+</span> state <span class="sc">+</span> <span class="fu">plot_layout</span>(<span class="at">design =</span> <span class="st">"</span></span>
+<span id="cb54-12"><a href="#cb54-12" aria-hidden="true" tabindex="-1"></a><span class="st">                                                                      11</span></span>
+<span id="cb54-13"><a href="#cb54-13" aria-hidden="true" tabindex="-1"></a><span class="st">                                                                      23</span></span>
+<span id="cb54-14"><a href="#cb54-14" aria-hidden="true" tabindex="-1"></a><span class="st">                                                                   "</span>)</span>
+<span id="cb54-15"><a href="#cb54-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-16"><a href="#cb54-16" aria-hidden="true" tabindex="-1"></a><span class="fu">show</span>(trait_and_state)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part2_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste0</span>(PLOTS_DIR, <span class="st">'/'</span>, <span class="st">"trait_and_state"</span>, <span class="st">".pdf"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Saving 7 x 5 in image</code></pre>
+</div>
+</div>
+<p>Finally, we will fit a model with the trait and state variables as separate predictors, allowing us to separate the between- and within-subject interactions of pa_daybefore_maxbout_time on hr_acrophase. These are alongside age and sex, and a random slope for pa_daybefore_maxbout_time_state will also be added (constant variables, such as pa_daybefore_maxbout_time_trait, can’t have a subject-level random slope)</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>model_e <span class="ot">&lt;-</span> <span class="fu">lmer</span>(hr_acrophase <span class="sc">~</span> pa_daybefore_maxbout_time_trait <span class="sc">+</span>  pa_daybefore_maxbout_time_state <span class="sc">+</span> age <span class="sc">+</span> sex <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">+</span> pa_daybefore_maxbout_time_state<span class="sc">|</span>subject_id), <span class="at">data=</span>df)</span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model_e)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear mixed model fit by REML. t-tests use Satterthwaite's method [
+lmerModLmerTest]
+Formula: 
+hr_acrophase ~ pa_daybefore_maxbout_time_trait + pa_daybefore_maxbout_time_state +  
+    age + sex + (1 + pa_daybefore_maxbout_time_state | subject_id)
+   Data: df
+
+REML criterion at convergence: 5041.3
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-4.4269 -0.5269 -0.0360  0.5162  4.3882 
+
+Random effects:
+ Groups     Name                            Variance Std.Dev. Corr 
+ subject_id (Intercept)                     2.01607  1.4199        
+            pa_daybefore_maxbout_time_state 0.03575  0.1891   0.28 
+ Residual                                   0.91591  0.9570        
+Number of obs: 1685, groups:  subject_id, 104
+
+Fixed effects:
+                                Estimate Std. Error       df t value Pr(&gt;|t|)
+(Intercept)                     15.20896    0.18298 89.08632  83.117  &lt; 2e-16
+pa_daybefore_maxbout_time_trait  1.04807    0.14843 87.12084   7.061 3.81e-10
+pa_daybefore_maxbout_time_state  0.16702    0.03144 65.40085   5.312 1.40e-06
+age                             -0.13603    0.15654 85.16613  -0.869    0.387
+sexMale                          0.14506    0.29234 85.68908   0.496    0.621
+                                   
+(Intercept)                     ***
+pa_daybefore_maxbout_time_trait ***
+pa_daybefore_maxbout_time_state ***
+age                                
+sexMale                            
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Correlation of Fixed Effects:
+                  (Intr) p_dybfr_mxbt_tm_t p_dybfr_mxbt_tm_s age   
+p_dybfr_mxbt_tm_t -0.001                                           
+p_dybfr_mxbt_tm_s  0.134  0.000                                    
+age                0.174  0.392             0.014                  
+sexMale           -0.615 -0.050            -0.006            -0.126</code></pre>
+</div>
+</div>
+<p>Wow - as the estimate for the _trait variable (1.05) is much greater than the _state variable (0.17), this tells us the delaying effect of pa_daybefore_maxbout_time on next-day hr_acrophase is primarily driven by habitually late activity. However, the smaller estimate of the state variable is also significant - regardless of habitual activity time, later activity time still delays next-day hr_acrophase, to a smaller extent.</p>
+<p>Furthermore, adding the trait variable has reduced between-subject variance from 2.90 to 2.02. The effect of age has been attenuated, as the trait variable now captures between-subject variance previously explained by age.</p>
+</section>
+<section id="a-crucial-point-circularity-of-data" class="level2">
+<h2 class="anchored" data-anchor-id="a-crucial-point-circularity-of-data">A crucial point: circularity of data</h2>
+<p>When we first loaded in the data, we dropped rows where the maximum physical bout was below 5am, as a fix for data wrap-around.</p>
+<p>In chronobiology, we often deal with <strong>circular</strong> data. For example, time of day: these values range from 0.00 to 23.99, where the value immediately after 23.99 is 0.00 - it ‘wraps-around’ at midnight.</p>
+<p><strong>Linear</strong> models do not work with circular data. As such, you <strong>must</strong> ensure that the relationship you are modelling is linear (visualisation helps), i.e no variables wrap-around. You could exclude variables as we have here, if this is reasonable for your analysis:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"data.csv"</span>, <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">sep =</span> <span class="st">","</span>)</span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>after_5am <span class="ot">&lt;-</span> df<span class="sc">$</span>pa_daybefore_maxbout_time <span class="sc">&gt;=</span> <span class="dv">5</span></span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>pa_daybefore_maxbout_time, <span class="at">y=</span>hr_acrophase, <span class="at">color=</span>after_5am))<span class="sc">+</span> </span>
+<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part2_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Alternatively, you could manipulate them in some way, for example we could add 24 hours to the values below 5am:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"data.csv"</span>, <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">sep =</span> <span class="st">","</span>)</span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>after_5am <span class="ot">&lt;-</span> df<span class="sc">$</span>pa_daybefore_maxbout_time <span class="sc">&gt;=</span> <span class="dv">5</span></span>
+<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb60-5"><a href="#cb60-5" aria-hidden="true" tabindex="-1"></a>df[df<span class="sc">$</span>after_5am<span class="sc">==</span><span class="cn">FALSE</span>,<span class="st">"pa_daybefore_maxbout_time"</span>] <span class="ot">&lt;-</span> df[df<span class="sc">$</span>after_5am<span class="sc">==</span><span class="cn">FALSE</span>,<span class="st">"pa_daybefore_maxbout_time"</span>] <span class="sc">+</span> <span class="dv">24</span></span>
+<span id="cb60-6"><a href="#cb60-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb60-7"><a href="#cb60-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(df, <span class="fu">aes</span>(<span class="at">x=</span>pa_daybefore_maxbout_time, <span class="at">y=</span>hr_acrophase, <span class="at">color=</span>after_5am))<span class="sc">+</span> </span>
+<span id="cb60-8"><a href="#cb60-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="part2_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The trait and state separation method, based on circular mean, is another way to approach this problem.</p>
+<p>However, depending on your data, it may not be possible to resolve these issues, in which case an LMER may not be suitable. In such cases, circular statistics or cosinor methods may work.</p>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<p>In this document, we applied LMERs to investigate a question in real chronobiological data. We introduced random slopes, as well as how to standardise variables, and account for demographic variables using LMERs. We also introduced the concept of ‘traits’ and ‘states’ to distinguish between- and within-subject effects of lifestyle on chronobiology.</p>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
